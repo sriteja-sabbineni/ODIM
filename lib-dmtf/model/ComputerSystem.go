@@ -423,7 +423,7 @@ type PCIeDevice struct {
 	Description     string         `json:"description,omitempty"`
 	ID              string         `json:"Id,omitempty"`
 	Name            string         `json:"Name,omitempty"`
-	Oem             *Oem           `json:"Oem,omitempty"`
+	Oem             Oem            `json:"Oem,omitempty"`
 	Assembly        *Assembly      `json:"Assembly,omitempty"`
 	AssetTag        string         `json:"AssetTag,omitempty"`
 	DeviceType      string         `json:"DeviceType,omitempty"` //enum
