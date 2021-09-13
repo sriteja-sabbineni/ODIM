@@ -435,7 +435,7 @@ type PCIeDevice struct {
 	PCIeInterface   *PCIeInterface `json:"PCIeInterface,omitempty"`
 	SerialNumber    string         `json:"SerialNumber,omitempty"`
 	SKU             string         `json:"SKU,omitempty"`
-	Status          Status         `json:"Status,omitempty"`
+	Status          *Status         `json:"Status,omitempty"`
 }
 
 //PCIeInterface in place object
