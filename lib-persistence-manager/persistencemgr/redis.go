@@ -1152,7 +1152,7 @@ func (p *ConnPool) CreateDeviceSubscriptionIndex(index, hostIP, location string,
 	defer writeConn.Close()
 	const value = 0
 	originResourceStr := "[" + strings.Join(originResources, " ") + "]"
-	key := hostIP + "::" + location + "::" + originResourceStr
+	key := hostIP + "||" + location + "||" + originResourceStr
 	// escape the square brackets before scanning
 	searchKey := strings.Replace(key, "[", "\\[", -1)
 	searchKey = strings.Replace(searchKey, "]", "\\]", -1)
@@ -1426,7 +1426,7 @@ func (p *ConnPool) CreateAggregateHostIndex(index, aggregateID string, hostIP []
 	defer writeConn.Close()
 	const value = 0
 	originResourceStr := "[" + strings.Join(hostIP, " ") + "]"
-	key := aggregateID + "::" + originResourceStr
+	key := aggregateID + "||" + originResourceStr
 	createErr := writeConn.Send("ZADD", index, value, key)
 	if createErr != nil {
 		return createErr
@@ -1480,19 +1480,43 @@ func (p *ConnPool) GetAggregateHosts(index string, match string) ([]string, erro
 // 1. index is the name of the index to be created
 // 2. key and value are the key value pair for the index
 func (p *ConnPool) UpdateAggregateHosts(index, aggregateID string, hostIP []string) error {
-	_, err := p.GetAggregateHosts(index, aggregateID+"[^0-9]*")
-	if err != nil {
-		return err
-	}
-	// host ip will be unique on each index in subscription of device
-	// so there will be only one data
-	err = p.DeleteDeviceSubscription(index, aggregateID+"[^0-9]")
+	err := p.DeleteAggregateHosts(index, aggregateID+"[^0-9]")
 	if err != nil {
 		return err
 	}
 	err = p.CreateAggregateHostIndex(index, aggregateID, hostIP)
 	if err != nil {
 		return fmt.Errorf("error while updating aggregate host ")
+	}
+	return nil
+}
+
+// DeleteAggregateHosts is for to Delete subscription details of aggregate
+// 1. index is the name of the index to be created
+// 2. removeKey is string parameter for remove
+func (p *ConnPool) DeleteAggregateHosts(index, aggregateID string) error {
+	writePool := (*redis.Pool)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&p.WritePool))))
+	if writePool == nil {
+		return fmt.Errorf("WritePool is nil")
+	}
+	writeConn := writePool.Get()
+	defer writeConn.Close()
+	value, err := p.GetAggregateHosts(index, aggregateID+"[^0-9]*")
+	if err != nil {
+		return err
+	}
+	if len(value) < 1 {
+		return fmt.Errorf("No data found for the key: %v", aggregateID)
+	}
+	for _, data := range value {
+		delErr := writeConn.Send("ZREM", index, data)
+		if delErr != nil {
+			if errs, aye := isDbConnectError(delErr); aye {
+				atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&p.WritePool)), nil)
+				return errs
+			}
+
+		}
 	}
 	return nil
 }
