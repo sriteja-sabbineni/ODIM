@@ -1215,7 +1215,6 @@ def load_password_from_vault(cur_dir):
 			stderr=subprocess.STDOUT,
 			shell=True,
 			universal_newlines=True)
-
 	try:
 		std_out, std_err = execHdlr.communicate()
 	except TimeoutExpired:
@@ -1226,21 +1225,18 @@ def load_password_from_vault(cur_dir):
 		logger.critical("failed to read node password")
 		os.chdir(cur_dir)
 		exit(1)
-
-	ANSIBLE_BECOME_PASS = fernet.decrypt(std_out).decode().rstrip('\n')
+	ANSIBLE_BECOME_PASS = std_out.rstrip('\n')
 
 
 def get_password_from_vault(cur_dir, password_file_path):
 	decrypt_cmd = '{vault_bin} -key {key_file} -decrypt {data_file}'.format(vault_bin=ODIMRA_VAULT_BIN,
 			key_file=ODIMRA_VAULT_KEY_FILE, data_file=password_file_path)
-
 	execHdlr = subprocess.Popen(decrypt_cmd,
 			stdin=subprocess.PIPE,
 			stdout=subprocess.PIPE,
 			stderr=subprocess.STDOUT,
 			shell=True,
 			universal_newlines=True)
-
 	try:
 		std_out, std_err = execHdlr.communicate()
 	except TimeoutExpired:
@@ -1252,7 +1248,7 @@ def get_password_from_vault(cur_dir, password_file_path):
 		os.chdir(cur_dir)
 		exit(1)
      
-	return fernet.decrypt(std_out).decode().rstrip('\n')
+	return std_out.rstrip('\n')
 
 # check_extract_kubespray_src is used for invoking
 # a script, after checking and if not exists, to extract
