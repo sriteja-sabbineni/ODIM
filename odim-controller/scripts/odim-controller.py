@@ -20,6 +20,7 @@ import glob, shutil, copy, getpass, socket
 
 import base64
 from cryptography.hazmat.primitives import hashes
+from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
@@ -60,6 +61,9 @@ ODIMRA_VAULT_BIN = ""
 MIN_REPLICA_COUNT = 0
 MAX_REPLICA_COUNT = 10
 MAX_LOG_FILE_SIZE = 5*1024*1024
+
+key = Fernet.generate_key()
+fernet = Fernet(key)
 
 # write_node_details is used for creating hosts.yaml required
 # for deploying kuberentes cluster using kubespray. hosts.yaml
@@ -1164,7 +1168,8 @@ def store_password_in_vault():
 		exit(1)
 
 	fd = open(ANSIBLE_SUDO_PW_FILE, "wb")
-	fd.write(first_pw.encode('utf-8'))
+	encpass = fernet.encrypt(first_pw.encode('utf-8'))
+	fd.write(encpass)
 	fd.close()
 
 	encrypt_cmd = '{vault_bin} -key {key_file} -encrypt {data_file}'.format(vault_bin=ODIMRA_VAULT_BIN,
@@ -1185,7 +1190,8 @@ def store_redis_password_in_vault(REDIS_PW_FILE_PATH, redis_db_name):
 		exit(1)
 
 	fd = open(REDIS_PW_FILE_PATH, "wb")
-	fd.write(first_pw.encode('utf-8'))
+	encpass = fernet.encrypt(first_pw.encode('utf-8'))
+	fd.write(encpass)
 	fd.close()
 
 	encrypt_cmd = '{vault_bin} -key {key_file} -encrypt {data_file}'.format(vault_bin=ODIMRA_VAULT_BIN,
@@ -1221,7 +1227,7 @@ def load_password_from_vault(cur_dir):
 		os.chdir(cur_dir)
 		exit(1)
 
-	ANSIBLE_BECOME_PASS = std_out.rstrip('\n')
+	ANSIBLE_BECOME_PASS = fernet.decrypt(std_out).decode().rstrip('\n')
 
 
 def get_password_from_vault(cur_dir, password_file_path):
@@ -1245,8 +1251,8 @@ def get_password_from_vault(cur_dir, password_file_path):
 		logger.critical("failed to read the password from file")
 		os.chdir(cur_dir)
 		exit(1)
-
-	return std_out.rstrip('\n')
+     
+	return fernet.decrypt(std_out).decode().rstrip('\n')
 
 # check_extract_kubespray_src is used for invoking
 # a script, after checking and if not exists, to extract
