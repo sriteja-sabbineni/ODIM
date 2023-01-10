@@ -1144,7 +1144,8 @@ def store_vault_key():
 			exit(1)
 
 		fd = open(ODIMRA_VAULT_KEY_FILE, "wb")
-		fd.write(first_pw.encode('utf-8'))
+		encpass = fernet.encrypt(first_pw.encode('utf-8'))
+		fd.write(encpass)
 		fd.close()
 
 		encode_cmd = '{vault_bin} -encode {key_file}'.format(vault_bin=ODIMRA_VAULT_BIN, key_file=ODIMRA_VAULT_KEY_FILE)
