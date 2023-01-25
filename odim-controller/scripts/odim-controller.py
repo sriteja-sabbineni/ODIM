@@ -64,7 +64,6 @@ MAX_LOG_FILE_SIZE = 5*1024*1024
 
 key = Fernet.generate_key()
 fernet = Fernet(key)
-
 # write_node_details is used for creating hosts.yaml required
 # for deploying kuberentes cluster using kubespray. hosts.yaml
 # is prepared based on the parameters provided in odim-controller conf
