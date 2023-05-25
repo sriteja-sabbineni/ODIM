@@ -28,6 +28,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/ODIM-Project/ODIM/lib-utilities/config"
@@ -99,9 +100,12 @@ func sentinelNewClient(dbConfig *Config) (*redis.SentinelClient, error) {
 	return rdb, nil
 }
 
+var (
+	goroutineCreated uint32
+)
+
 // GetCurrentMasterHostPort is to get the current Redis Master IP and Port from Sentinel.
 func GetCurrentMasterHostPort(dbConfig *Config) (string, string, error) {
-	fmt.Println("*********** Get Master IP ")
 	sentinelClient, err := sentinelNewClient(dbConfig)
 	if err != nil {
 		return "", "", err
@@ -113,12 +117,16 @@ func GetCurrentMasterHostPort(dbConfig *Config) (string, string, error) {
 		masterIP = stringSlice[0]
 		masterPort = stringSlice[1]
 	}
-	go monitorFailureOver(sentinelClient)
+	if atomic.CompareAndSwapUint32(&goroutineCreated, 0, 1) {
+		go monitorFailureOver(sentinelClient)
+	} else {
+		fmt.Println("Go routine already running ")
+	}
 	return masterIP, masterPort, nil
 }
 
 func monitorFailureOver(sentinelClient *redis.SentinelClient) {
-	fmt.Println("************** Monitor start ")
+	fmt.Println("Monitor start ************ ")
 	pub := sentinelClient.Subscribe("+switch-master")
 	var err *errors.Error
 
