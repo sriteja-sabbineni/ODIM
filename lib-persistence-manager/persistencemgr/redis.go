@@ -123,6 +123,8 @@ func monitorFailureOver(sentinelClient *redis.SentinelClient) {
 	for {
 		data, _ := pub.Receive()
 		fmt.Println(" **************  Failure over received ", data)
+		resetDBWriteConnection(InMemory)
+		resetDBWriteConnection(OnDisk)
 	}
 
 }
