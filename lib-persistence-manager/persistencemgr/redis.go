@@ -120,11 +120,26 @@ func GetCurrentMasterHostPort(dbConfig *Config) (string, string, error) {
 func monitorFailureOver(sentinelClient *redis.SentinelClient) {
 	fmt.Println("************** Monitor start ")
 	pub := sentinelClient.Subscribe("+switch-master")
+	var err *errors.Error
+
 	for {
 		data, _ := pub.Receive()
 		fmt.Println(" **************  Failure over received ", data)
-		resetDBWriteConnection(InMemory)
-		resetDBWriteConnection(OnDisk)
+		if inMemDBConnPool != nil && onDiskDBConnPool != nil {
+			config := getInMemoryDBConfig()
+			inMemDBConnPool, err = config.Connection()
+			if err != nil {
+				continue
+			}
+
+			config1 := getOnDiskDBConfig()
+			onDiskDBConnPool, err = config1.Connection()
+			if err != nil {
+				continue
+			}
+			resetDBWriteConnection(InMemory)
+			resetDBWriteConnection(OnDisk)
+		}
 	}
 
 }
