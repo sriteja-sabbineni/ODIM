@@ -119,8 +119,6 @@ func GetCurrentMasterHostPort(dbConfig *Config) (string, string, error) {
 	}
 	if atomic.CompareAndSwapUint32(&goroutineCreated, 0, 1) {
 		go monitorFailureOver(sentinelClient)
-	} else {
-		fmt.Println("Go routine already running ")
 	}
 	return masterIP, masterPort, nil
 }
@@ -241,14 +239,11 @@ func getOnDiskDBConfig() *Config {
 
 // GetDBConnection is used to get the new Connection Pool for Inmemory/OnDisk DB
 func GetDBConnection(dbFlag DbType) (*ConnPool, *errors.Error) {
-	fmt.Println("Get Db connection called **************  ")
 	var err *errors.Error
 	switch dbFlag {
 	case InMemory:
 		// In this case this function return in-memory db connection pool
 		if inMemDBConnPool == nil || inMemDBConnPool.ReadPool == nil {
-			fmt.Println("Get Db connection called **************  111111111 ")
-
 			config := getInMemoryDBConfig()
 			inMemDBConnPool, err = config.Connection()
 			if err != nil {
@@ -256,8 +251,6 @@ func GetDBConnection(dbFlag DbType) (*ConnPool, *errors.Error) {
 			}
 		}
 		if inMemDBConnPool.WritePool == nil {
-			fmt.Println("Get Db connection called **************  2222222 ")
-
 			resetDBWriteConnection(InMemory)
 		}
 
