@@ -132,7 +132,8 @@ func monitorFailureOver(sentinelClient *redis.SentinelClient) {
 
 	for {
 		data, _ := pub.Receive()
-		fmt.Println(" **************  Failure over received ", data)
+		fmt.Printf(" **************  Failure over received %+v \n ", data)
+
 		if inMemDBConnPool != nil && onDiskDBConnPool != nil {
 			config := getInMemoryDBConfig()
 			inMemDBConnPool, err = config.Connection()
