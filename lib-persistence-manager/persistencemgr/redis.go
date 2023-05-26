@@ -120,6 +120,8 @@ func GetCurrentMasterHostPort(dbConfig *Config) (string, string, error) {
 	if atomic.CompareAndSwapUint32(&goroutineCreated, 0, 1) {
 		go monitorFailureOver(sentinelClient)
 	}
+	fmt.Println(" ********** MasterIP ", masterIP, " Master Port ", masterPort, " Data  ", stringSlice)
+	fmt.Println("*** Config set ", dbConfig.MasterSet)
 	return masterIP, masterPort, nil
 }
 
