@@ -131,9 +131,10 @@ func monitorFailureOver(sentinelClient *redis.SentinelClient) {
 	for {
 		data, _ := pub.Receive()
 		fmt.Printf(" **************  Failure over received %+v \n ", data)
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 		if inMemDBConnPool != nil && onDiskDBConnPool != nil {
 			config := getInMemoryDBConfig()
+			fmt.Printf("Master node is %+v \n", config)
 			inMemDBConnPool, err = config.Connection()
 			if err != nil {
 				fmt.Println("Error is ****** In Memory  ", err)
