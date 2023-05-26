@@ -337,6 +337,7 @@ func (c *Config) Connection() (*ConnPool, *errors.Error) {
 		if err != nil {
 			return nil, errors.PackError(errors.UndefinedErrorType, err.Error())
 		}
+		fmt.Println("Master host is ", masterIP)
 	}
 	connPools.ReadPool, err = goRedisNewClient(c, c.Host, c.Port)
 	if err != nil {
