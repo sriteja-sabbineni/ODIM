@@ -28,6 +28,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/ODIM-Project/ODIM/lib-utilities/config"
@@ -99,6 +100,10 @@ func sentinelNewClient(dbConfig *Config) (*redis.SentinelClient, error) {
 	return rdb, nil
 }
 
+var (
+	goroutineCreated uint32
+)
+
 // GetCurrentMasterHostPort is to get the current Redis Master IP and Port from Sentinel.
 func GetCurrentMasterHostPort(dbConfig *Config) (string, string, error) {
 	sentinelClient, err := sentinelNewClient(dbConfig)
@@ -112,8 +117,43 @@ func GetCurrentMasterHostPort(dbConfig *Config) (string, string, error) {
 		masterIP = stringSlice[0]
 		masterPort = stringSlice[1]
 	}
-
+	if atomic.CompareAndSwapUint32(&goroutineCreated, 0, 1) {
+		go monitorFailureOver(sentinelClient)
+	}
+	fmt.Println(" ********** MasterIP ", masterIP, " Master Port ", masterPort, " Data  ", stringSlice)
+	fmt.Println("*** Config set ", dbConfig.MasterSet)
 	return masterIP, masterPort, nil
+}
+
+func monitorFailureOver(sentinelClient *redis.SentinelClient) {
+	fmt.Println("Monitor start ************ ")
+	pub := sentinelClient.Subscribe("+switch-master")
+	var err *errors.Error
+
+	for {
+		data, _ := pub.Receive()
+		fmt.Printf(" **************  Failure over received %+v \n ", data)
+		time.Sleep(10 * time.Second)
+		if inMemDBConnPool != nil && onDiskDBConnPool != nil {
+			config := getInMemoryDBConfig()
+			fmt.Printf("Master node is %+v \n", config)
+			inMemDBConnPool, err = config.Connection()
+			if err != nil {
+				fmt.Println("Error is ****** In Memory  ", err)
+				continue
+			}
+
+			config1 := getOnDiskDBConfig()
+			onDiskDBConnPool, err = config1.Connection()
+			if err != nil {
+				fmt.Println("Error is ****** In Memory  ", err)
+				continue
+			}
+			resetDBWriteConnection(InMemory)
+			resetDBWriteConnection(OnDisk)
+		}
+	}
+
 }
 
 // resetDBWriteConnection is used to reset the WriteConnection Pool (inmemory / OnDisk).
@@ -299,6 +339,7 @@ func (c *Config) Connection() (*ConnPool, *errors.Error) {
 		if err != nil {
 			return nil, errors.PackError(errors.UndefinedErrorType, err.Error())
 		}
+		fmt.Println("Master host is ", masterIP)
 	}
 	connPools.ReadPool, err = goRedisNewClient(c, c.Host, c.Port)
 	if err != nil {
