@@ -53,7 +53,7 @@ const (
 	deleteErrMsg          string = "error while trying to delete data: "
 	dataRetrivalErrMsg    string = "error while trying to get data: "
 	writeDataErrMsg       string = "error while trying to Write Transaction data: WritePool is nil"
-	notFoundErrMsg        string = "no data found for the key: %v"
+	notFoundErrMsg        string = "no data found for the key: "
 	intConvErrMsg         string = "error while trying to convert the data into int: "
 	foundStr              string = " found"
 )
@@ -853,7 +853,7 @@ func (p *ConnPool) GetResourceDetails(key string) (string, *errors.Error) {
 		ID = strings.SplitN(iter.Val(), ":", 2)
 	}
 	if len(ID) < 1 {
-		return "", errors.PackError(errors.DBKeyNotFound, noDataErrMsg, key)
+		return "", errors.PackError(errors.DBKeyNotFound, notFoundErrMsg, key)
 	}
 	return p.Read(ID[0], ID[1])
 }
